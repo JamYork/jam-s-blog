@@ -36,5 +36,11 @@ log_timestamps=SYSTEM
 重启
 systemctl restart mysqld
 
+navicat连接
+use mysql
+update user set host='%' where user='root';
+grant all privileges  on root.* to root@'%';
+
+
 
 
