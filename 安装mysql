@@ -1,0 +1,40 @@
+安装mysql 8.0
+
+1.查询是否已存在mysql或者mariadb
+rpm -qa | grep mariadb 
+2.卸载
+yum erase -y mariadb-libs-5.5.60-1.el7_5.x86_64
+
+3.安装mysql
+官方网站：https://dev.mysql.com/downloads/repo/yum/
+下载仓库包：wget https://repo.mysql.com//mysql80-community-release-el7-1.noarch.rpm
+安装仓库：rpm -ivh mysql80-community-release-el7-1.noarch.rpm
+安装mysql8.0：yum install -y mysql-community-{server,client,common,libs}-* 
+源 “MySQL 8.0 Community Server“ 的 GPG 密钥已安装，但是不适用于此软件包。请检查源的公钥 URL 是否配置正确。 bash: 源: 未找到命令... 修改密码失败
+yum install mysql-server --nogpgcheck（解决）
+
+启动mysql
+systemctl start mysqld
+systemctl enable mysqld
+
+4.找到临时密码
+tailf /var/log/mysqld.log
+
+5.修改新密码
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'dgdb20I5';
+
+6.修改日志时间问题
+select now();
+SHOW GLOBAL VARIABLES LIKE 'log_timestamps';
+SET GLOBAL log_timestamps = SYSTEM;
+默认安装后error_log,slow_log 日志时间戳默认为UTC，因此会造成与系统时间不一致，与北京时间相差8个小时(永久生效)
+vim /etc/my.cnf
+[mysqld]
+ 
+log_timestamps=SYSTEM
+
+重启
+systemctl restart mysqld
+
+
+
