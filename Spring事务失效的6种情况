@@ -1,0 +1,54 @@
+1 方法自调用
+这个主要是针对声明式事务的，声明式事务底层其实就是 AOP，所以在声明式事务中，我们我们拿到的服务类并不是服务类本身，而是一个代理对象，在这个代理对象中的代理方法中，自动添加了事务的逻辑，所以如果我们直接方法自调用，没有经过这个代理对象，事务就会失效。
+伪代码：
+public class UserService{
+   @Transactional
+   public void sayHello(){}
+}
+
+此时，如果在 UserController 中注入 UserService，那么拿到的并不是 UserService 对象本身，而是通过动态代理为 UserService 生成的一个动态代理类，这个动态代理就类似下面这样（伪代码）：
+public class UserServiceProxy extends UserService{
+    public void sayHello(){
+        try{
+            //开启事务
+            //调用父类 sayHello
+            //提交事务
+        }catch(Exception e){
+            //回滚事务
+        }
+    }
+}
+
+所以最终调用的并不是 UserService 本身的方法，而是动态代理对象中的方法。因此，如果存在这样的代码：
+public class UserService{
+   @Transactional
+   public void sayHello(){}
+   public void useSayHello(){sayHello();}
+}
+在 useSayHello 中调用 sayHello 方法，sayHello 方法上虽然有事务注解，但是这里的事务不生效（因为调用的不是的动态代理对象中的 sayHello 方法，而是当前对象 this 的 sayHello 方法）。
+
+2 异常被捕获
+如果在 sayHello 方法中将异常捕获了，那么动态代理类中的方法，就感知不知道目标方法发生异常了，自然也就不会自动处理事务回滚了。还是以前面的 UserServiceProxy 为例：
+public class UserServiceProxy extends UserService{
+    public void sayHello(){
+        try{
+            //开启事务
+            //调用父类 sayHello
+            //提交事务
+        }catch(Exception e){
+            //回滚事务
+        }
+    }
+}
+如果调用 调用父类 sayHello 的时候，sayHello 方法自动将异常捕获了，那么很明显，这里就不会进行异常回滚了。
+3 方法非 public
+这个算是 Spring 官方的一个强制要求了，声明式事务方法只能是 public，对于非 public 的方法如果想用声明式事务，那得上 AspectJ。
+4 非运行时异常
+默认情况下，只会捕获 RuntimeException，如果想扩大捕获范围，可以自行配置。
+5 不是 Spring Bean
+声明式事务主要是通过动态代理来处理事务的，如果你拿到手的 UserService 对象就是原原本本的 UserService（如果自己 new 了一个 UserService 就是这种情况），那么事务代码在哪里？没有事务处理的代码，事务自然不会生效。
+
+声明式事务的核心，就是动态代理生成的那个对象，没有用到那个对象，事务就没戏。
+
+6 数据库不支持事务
+数据库不支持，Spring 咋配都没用。
