@@ -1,0 +1,8 @@
+#新增数据
+curl -XPOST -H 'Content-Type:application/json' localhost:9200/sys_log/_doc -d '{"module":"测试模块","type":"测试类型","detail":"测试详情","create_time":"2024-06-19T18:10:00","result":"成功"}'
+#修改数据(修改单个字段，其余字段值不变)
+curl -XPOST -H 'Content-Type:application/json' localhost:9200/sys_log/_doc/U3T6L5ABXR7aM3SOprfB/_update -d '{"doc":{"type":"测试详情222222"}}'
+#修改数据(需要将原有的所有字段写出来，不修改的也要写，否则不写的字段会被删除)
+curl -XPUT -H 'Content-Type:application/json' localhost:9200/sys_log/_doc/U3T6L5ABXR7aM3SOprfB/ -d '{"type":"测试详情222222", "module":"测试模块"}'
+#删除数据(删除操作是重度操作，它会影响Elasticsearch集群的性能。在生产环境中应谨慎使用)
+curl -XPOST -H 'Content-Type:application/json' localhost:9200/sys_log/_delete_by_query -d '{"query":{"bool":{"must":{"term":{"type.keyword":{"value":"测试详情222222"}}}}}}'
